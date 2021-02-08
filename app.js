@@ -1,60 +1,75 @@
-const apiBase = "https://www.themealdb.com/api/json/v1/1/search.php";
+const searchBtn = document.getElementById('search-btn');
+const mealList = document.getElementById('meal');
+const mealDetailsContent = document.querySelector('.meal-details-content');
+const recipeCloseBtn = document.getElementById('recipe-close-btn');
 
-const getMealData = mealName => {
-        const url = `${apiBase}?f=${mealName}`;
-        fetch(url)
-                .then(response => response.json())
-                .then(data => updateUI(data))
+// event listeners
+searchBtn.addEventListener('click', getMealList);
+mealList.addEventListener('click', getMealRecipe);
+recipeCloseBtn.addEventListener('click', () => {
+    mealDetailsContent.parentElement.classList.remove('showRecipe');
+});
+
+
+// get meal list that matches with the ingredients
+function getMealList(){
+    let searchInputTxt = document.getElementById('search-input').value.trim();
+    fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${searchInputTxt}`)
+    .then(response => response.json())
+    .then(data => {
+        let html = "";
+        if(data.meals){
+            data.meals.forEach(meal => {
+                html += `
+                    <div class = "meal-item" data-id = "${meal.idMeal}">
+                        <div class = "meal-img">
+                            <img src = "${meal.strMealThumb}" alt = "food">
+                        </div>
+                        <div class = "meal-name">
+                            <h3>${meal.strMeal}</h3>
+                            <a href = "#" class = "recipe-btn">Get Recipe</a>
+                        </div>
+                    </div>
+                `;
+            });
+            mealList.classList.remove('notFound');
+        } else{
+            html = "Sorry, we didn't find any meal!";
+            mealList.classList.add('notFound');
+        }
+
+        mealList.innerHTML = html;
+    });
 }
 
 
-const searchBtn = document.getElementById("search_button");
-searchBtn.addEventListener("click", () => {
-        const inputMeal = document.getElementById("meal-name").value;
-        getMealData(inputMeal)
-})
-const updateUI = data => {
-        const mealList = document.getElementById("meal-list");
-        mealList.innerHTML = `
-               
-        <div class="row row-cols-1 row-cols-md-8 g-4">
-                <div class="col">
-                        <div class="card h-100">
-                                <img src="${data.meals[0].strMealThumb}" class="card-img-top" alt="...">
-                                <div class="card-body">
-                                        <h5 class="card-title">${data.meals[0].strMeal}</h5>
-                                        <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
-                                </div>
-                        </div>
-                </div>
-                <div class="col">
-                <div class="card h-100">
-                <img src="${data.meals[1].strMealThumb}" class="card-img-top" alt="...">
-                <div class="card-body">
-                        <h5 class="card-title">${data.meals[1].strMeal}</h5>
-                        <p class="card-text">This is a short card.</p>
-                </div>
-                </div>
-                </div>
-                <div class="col">
-                <div class="card h-100">
-                <img src="${data.meals[2].strMealThumb}" class="card-img-top" alt="...">
-                <div class="card-body">
-                        <h5 class="card-title">${data.meals[1].strMeal}</h5>
-                        <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content.</p>
-                </div>
-                </div>
-                </div>
-                <div class="col">
-                <div class="card h-100">
-                <img src="${data.meals[3].strMealThumb}" class="card-img-top" alt="...">
-                <div class="card-body">
-                        <h5 class="card-title">${data.meals[3].strMeal}</h5>
-                        <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
-                </div>
-                </div>
-                </div>
-                </div>
-               
-                `
+// get recipe of the meal
+function getMealRecipe(e){
+    e.preventDefault();
+    if(e.target.classList.contains('recipe-btn')){
+        let mealItem = e.target.parentElement.parentElement;
+        fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${mealItem.dataset.id}`)
+        .then(response => response.json())
+        .then(data => mealRecipeModal(data.meals));
+    }
+}
+
+// create a modal
+function mealRecipeModal(meal){
+    console.log(meal);
+    meal = meal[0];
+    let html = `
+        <h2 class = "recipe-title">${meal.strMeal}</h2>
+        <p class = "recipe-category">${meal.strCategory}</p>
+        <div class = "recipe-instruct">
+            <h3>Instructions:</h3>
+            <p>${meal.strInstructions}</p>
+        </div>
+        <div class = "recipe-meal-img">
+            <img src = "${meal.strMealThumb}" alt = "">
+        </div>
+        
+    `;
+    mealDetailsContent.innerHTML = html;
+    mealDetailsContent.parentElement.classList.add('showRecipe');
 }
